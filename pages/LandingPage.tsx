@@ -129,8 +129,8 @@ const LandingPage: React.FC = () => {
             />
             <FeatureCard 
               icon={<Globe2 className="text-cyan-400" />}
-              title="Elevation Profiles"
-              desc="Real-time terrain analysis. Visualize your AGL altitude against 3D terrain estimates along the entire path."
+              title="Weather Intelligence"
+              desc="Integrated METAR data providing real-time wind, visibility, and precipitation alerts."
               delay="delay-300"
             />
             <FeatureCard 

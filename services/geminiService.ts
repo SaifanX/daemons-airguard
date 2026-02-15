@@ -17,76 +17,64 @@ export const getCaptainCritique = async (
   const activeApiKey = overrideApiKey || process.env.API_KEY || '';
 
   if (!activeApiKey) {
-    return "API Configuration Error: Captain Arjun is offline. (Missing API Key in Systems Config)";
+    return "COMMAND_FAILURE: System offline. Provide authorization key in settings to establish tactical link.";
   }
 
   const ai = new GoogleGenAI({ apiKey: activeApiKey });
-  const model = "gemini-3-flash-preview";
   
   const weatherContext = weather 
-    ? `- Conditions: ${weather.condition}, Temp: ${weather.temp}°C, Wind: ${weather.windSpeed} km/h (${weather.windDirection}), Visibility: ${weather.visibility}km`
-    : "- Weather data unavailable";
+    ? `- METAR: ${weather.condition}, ${weather.windSpeed} km/h ${weather.windDirection}`
+    : "- METAR Unavailable";
 
   const statsContext = flightStats
-    ? `- Path Distance: ${flightStats.distance} km, Waypoints: ${flightStats.waypoints}`
+    ? `- VECTORS: ${flightStats.distance} km, ${flightStats.waypoints} WPTs`
     : "";
 
-  const telemetryContext = telemetry
-    ? `- Telemetry: Speed ${telemetry.speed.toFixed(1)}m/s, Heading ${telemetry.heading.toFixed(0)}°, Battery ${telemetry.battery.toFixed(0)}%, Alt AGL ${telemetry.altitudeAGL}m`
-    : "";
-
-  let zoneContext = "No intersections detected.";
+  let zoneContext = "Clear of restricted zones.";
   if (path && path.length >= 2) {
     const line = turf.lineString(path.map(p => [p.lng, p.lat]));
-    const intersectedZones = RESTRICTED_ZONES.filter(zone => {
-      const polyCoords = zone.coordinates.map(c => [c.lng, c.lat]);
-      polyCoords.push(polyCoords[0]);
-      const polygon = turf.polygon([polyCoords]);
-      return turf.booleanIntersects(line, polygon);
-    }).map(z => `${z.name} (${z.type})`);
+    const intersected = RESTRICTED_ZONES.filter(zone => {
+      const poly = turf.polygon([[...zone.coordinates.map(c => [c.lng, c.lat]), [zone.coordinates[0].lng, zone.coordinates[0].lat]]]);
+      return turf.booleanIntersects(line, poly);
+    }).map(z => z.name);
     
-    if (intersectedZones.length > 0) {
-      zoneContext = `Path intersects with: ${intersectedZones.join(", ")}`;
-    }
+    if (intersected.length > 0) zoneContext = `ZONE_INTERSECT: ${intersected.join(", ")}`;
   }
 
-  const systemPrompt = `
-    You are Captain Arjun, a retired Indian Air Force pilot and high-ranking safety officer for the Ministry of Civil Aviation. 
-    You are strict, disciplined, and speak in precise military jargon (Roger, Wilco, Negative).
-
-    CONTEXT:
-    - Current Risk Assessment: ${riskLevel}%
-    - Detected Violations: ${violations.length > 0 ? violations.join(", ") : "None"}
-    - Zone Data: ${zoneContext}
-    - Aircraft Status: ${flightDetails.model} at ${flightDetails.altitude}m AGL
-    ${weatherContext}
-    ${statsContext}
-    ${telemetryContext}
+  const systemInstruction = `
+    IDENTITY: You are Captain Arjun, a retired IAF Wing Commander and strict Safety Inspector for DGCA.
+    TONE: Professional, blunt, high-discipline, military-grade jargon.
     
-    MANDATORY REGULATORY PROTOCOL:
-    1. If Risk Level is > 50%, you MUST append a "REGULATORY CITE" section at the end of your response.
-    2. Quote specific rules from the "Drone Rules, 2021" of India. Examples:
-       - Rule 31: Restrictions on operation in Red/Yellow zones without permission.
-       - Rule 33: Vertical limits (400ft/120m).
-       - Rule 34: Proximity to airport boundaries (5km perimeter).
-       - Rule 28: Mandatory Remote Pilot Certificate for Micro/Small drones.
-    3. Use a no-nonsense tone. If risk is 100%, you are effectively grounding the pilot.
-    4. Keep your total response under 160 words. Be professional and authoritative.
+    CONTEXT:
+    - MISSION_RISK: ${riskLevel}%
+    - VIOLATIONS: ${violations.join(", ") || "None"}
+    - ASSET: ${flightDetails.model} @ ${flightDetails.altitude}m
+    - ENVIRONMENT: ${weatherContext}
+    - TELEMETRY: ${statsContext}
+    - AIRSPACE: ${zoneContext}
+
+    PROTOCOLS:
+    1. Acknowledge user queries with "Roger" or "Negative".
+    2. If Risk > 60%, prioritize safety reprimands.
+    3. Refer to "Drone Rules 2021" specifically for Rule 31 (Zones) or Rule 33 (Altitude).
+    4. Keep output concise (<120 words).
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model,
+      model: "gemini-2.5-flash-lite-latest",
       contents: userMessage,
       config: {
-        systemInstruction: systemPrompt,
-        temperature: 0.6,
+        systemInstruction,
+        temperature: 0.7,
       }
     });
 
-    return response.text || "Radio silence. Please repeat.";
-  } catch (error) {
-    console.error("Gemini Error:", error);
-    return "Comms failure. Unable to reach ATC.";
+    return response.text || "Radio silence. Repeat message.";
+  } catch (error: any) {
+    if (error.message?.includes("entity was not found")) {
+      return "AUTHENTICATION_ERROR: Provided API key is invalid or unauthorized.";
+    }
+    return "COMMS_FAILURE: Unable to reach base. Signal attenuated.";
   }
 };

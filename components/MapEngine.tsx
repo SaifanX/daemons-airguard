@@ -6,7 +6,6 @@ import { useStore } from '../store';
 import { RESTRICTED_ZONES } from '../data/zones';
 import { ZoneType } from '../types';
 
-// Component to dynamically toggle map handlers based on mapMode
 const MapHandlerController = () => {
   const map = useMap();
   const mapMode = useStore(state => state.mapMode);
@@ -24,7 +23,6 @@ const MapHandlerController = () => {
     }
   }, [map, mapMode]);
 
-  // Handle Follow Mode
   useEffect(() => {
     if (isSimulating && simPosition && simFollowMode) {
       map.setView([simPosition.lat, simPosition.lng], map.getZoom(), {
@@ -49,10 +47,16 @@ const MapResizer = () => {
 };
 
 const MapInteractions = () => {
-  const { addPoint, mapMode, isSimulating } = useStore();
+  const { addPoint, mapMode, isSimulating, setIsInteracting } = useStore();
   const map = useMap();
 
   useMapEvents({
+    mousedown() { setIsInteracting(true); },
+    mouseup() { setIsInteracting(false); },
+    touchstart() { setIsInteracting(true); },
+    touchend() { setIsInteracting(false); },
+    dragstart() { setIsInteracting(true); },
+    dragend() { setIsInteracting(false); },
     click(e) {
       if (mapMode === 'DRAW' && !isSimulating) {
         addPoint({ lat: e.latlng.lat, lng: e.latlng.lng });
@@ -78,28 +82,38 @@ const MapInteractions = () => {
 
 const waypointIcon = (index: number, isSelected: boolean) => L.divIcon({
   className: 'waypoint-icon',
-  html: `<div class="w-6 h-6 bg-slate-900/80 border ${isSelected ? 'border-white scale-125 bg-aviation-orange shadow-[0_0_10px_rgba(249,115,22,0.4)]' : 'border-aviation-orange'} text-aviation-orange text-[10px] font-bold flex items-center justify-center rounded-full transition-all">
-    ${index + 1}
-  </div>`,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-});
-
-const droneGhostIcon = (heading: number) => L.divIcon({
-  className: 'drone-ghost-icon',
   html: `
-    <div style="transform: rotate(${heading}deg)" class="relative transition-transform duration-100">
-      <div class="w-10 h-10 flex items-center justify-center">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]">
-          <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="#f97316" stroke="white" stroke-width="1.5"/>
-        </svg>
+    <div class="relative group">
+      <div class="signal-ring absolute -inset-2 border-2 border-aviation-orange rounded-full animate-signal-ring ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+      <div class="relative w-7 h-7 bg-slate-900 border-2 ${isSelected ? 'border-white scale-110 bg-aviation-orange shadow-[0_0_15px_rgba(249,115,22,0.6)]' : 'border-aviation-orange'} text-aviation-orange text-[10px] font-bold flex items-center justify-center rounded-full transition-all">
+        ${index === 0 ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' : index + 1}
       </div>
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 border border-aviation-orange/30 rounded-full animate-ping opacity-20"></div>
     </div>
   `,
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
 });
+
+const droneGhostIcon = (heading: number, scenario: string) => {
+  const isEmergency = scenario === 'EMERGENCY_LANDING';
+  const isHeavyWind = scenario === 'HEAVY_WEATHER';
+  
+  return L.divIcon({
+    className: 'drone-ghost-icon',
+    html: `
+      <div style="transform: rotate(${heading}deg)" class="relative transition-transform duration-100 ${isHeavyWind ? 'animate-bounce-fast' : ''}">
+        <div class="w-10 h-10 flex items-center justify-center">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-[0_0_12px_${isEmergency ? 'rgba(239,68,68,1)' : 'rgba(249,115,22,1)'}]">
+            <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="${isEmergency ? '#ef4444' : '#f97316'}" stroke="white" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 border-2 ${isEmergency ? 'border-red-500' : 'border-aviation-orange'}/40 rounded-full animate-ping opacity-30"></div>
+      </div>
+    `,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+  });
+};
 
 const MapEngine: React.FC = () => {
   const { 
@@ -110,44 +124,44 @@ const MapEngine: React.FC = () => {
     setSelectedWaypointIndex,
     isSimulating,
     simPosition,
-    telemetry
+    telemetry,
+    activeScenario
   } = useStore();
   
-  const [mapCenter] = useState<[number, number]>([12.9716, 77.5946]); // Bangalore Center
-  
+  const [mapCenter] = useState<[number, number]>([12.9716, 77.5946]);
   const pathPositions = useMemo(() => flightPath.map(p => [p.lat, p.lng] as [number, number]), [flightPath]);
+
+  const getZoneOptions = (type: ZoneType) => {
+    switch(type) {
+      case ZoneType.CRITICAL: return { color: '#ef4444', fillOpacity: 0.2 };
+      case ZoneType.CONTROLLED: return { color: '#3b82f6', fillOpacity: 0.1 };
+      default: return { color: '#f97316', fillOpacity: 0.15 };
+    }
+  };
 
   return (
     <div className="relative w-full h-full bg-slate-950">
-      <MapContainer 
-        center={mapCenter} 
-        zoom={12} 
-        className="w-full h-full"
-        zoomControl={false}
-        attributionControl={false}
-      >
+      <MapContainer center={mapCenter} zoom={12} className="w-full h-full" zoomControl={false} attributionControl={false}>
         <MapResizer />
         <MapHandlerController />
         <MapInteractions />
-        
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        />
+        <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
 
         {RESTRICTED_ZONES.map(zone => (
             <Polygon
                 key={zone.id}
                 positions={zone.coordinates.map(c => [c.lat, c.lng])}
                 pathOptions={{ 
-                    color: zone.type === ZoneType.CRITICAL ? '#ef4444' : zone.type === ZoneType.RESTRICTED ? '#eab308' : '#6366f1',
-                    fillOpacity: 0.15,
-                    weight: 2
+                    ...getZoneOptions(zone.type),
+                    dashArray: zone.type === ZoneType.CRITICAL ? '5, 8' : '0',
+                    weight: 3,
+                    className: zone.type === ZoneType.CRITICAL ? 'critical-zone-pulse' : ''
                 }}
             >
-                <Tooltip sticky className="bg-slate-900 text-slate-200 border border-slate-700 rounded-lg font-mono text-[10px] px-2 py-1">
+                <Tooltip sticky className="ghost-tooltip">
                   <div className="uppercase">
-                    <span className="font-bold text-slate-400 text-[8px] tracking-widest">{zone.type} AIRSPACE</span><br/>
-                    <span className="text-sm font-bold text-white">{zone.name}</span>
+                    <span className="font-bold text-slate-400 text-[8px] tracking-[0.2em]">{zone.type} AIRSPACE</span><br/>
+                    <span className="text-xs font-bold text-white">{zone.name}</span>
                   </div>
                 </Tooltip>
             </Polygon>
@@ -155,10 +169,7 @@ const MapEngine: React.FC = () => {
 
         {pathPositions.length > 0 && (
           <>
-            <Polyline 
-                positions={pathPositions} 
-                pathOptions={{ color: '#f97316', weight: 4, opacity: 0.8, dashArray: '10, 10' }} 
-            />
+            <Polyline positions={pathPositions} pathOptions={{ color: '#f97316', weight: 3, opacity: isSimulating ? 0.2 : 0.8, dashArray: isSimulating ? '10, 10' : '0' }} />
             {pathPositions.map((pos, idx) => (
               <Marker 
                 key={idx} 
@@ -178,11 +189,7 @@ const MapEngine: React.FC = () => {
         )}
 
         {isSimulating && simPosition && (
-          <Marker 
-            position={[simPosition.lat, simPosition.lng]} 
-            icon={droneGhostIcon(telemetry.heading)}
-            zIndexOffset={1000}
-          />
+          <Marker position={[simPosition.lat, simPosition.lng]} icon={droneGhostIcon(telemetry.heading, activeScenario)} zIndexOffset={1000} />
         )}
       </MapContainer>
     </div>

@@ -36,6 +36,8 @@ export interface TelemetryData {
   heading: number;
   battery: number;
   altitudeAGL: number;
+  signalStrength: number;
+  satCount: number;
 }
 
 export interface SavedMission {
@@ -44,9 +46,11 @@ export interface SavedMission {
   timestamp: number;
   path: Coordinate[];
   settings: DroneSettings;
+  riskScore: number;
 }
 
 export type MapMode = 'PAN' | 'DRAW' | 'SEARCH';
+export type SidebarTab = 'CONFIG' | 'CHECKLIST' | 'MISSIONS';
 
 export interface UiVisibility {
   sidebar: boolean;
@@ -56,7 +60,15 @@ export interface UiVisibility {
   settings: boolean;
 }
 
-export type SimScenario = 'STANDARD' | 'HEAVY_WEATHER' | 'HIGH_ALTITUDE';
+export type SimScenario = 'STANDARD' | 'HEAVY_WEATHER' | 'HIGH_ALTITUDE' | 'EMERGENCY_LANDING';
+
+export interface PreFlightChecklist {
+  batteryChecked: boolean;
+  propellersInspected: boolean;
+  gpsLock: boolean;
+  regulatoryClearance: boolean;
+  firmwareValidated: boolean;
+}
 
 export interface AppState {
   flightPath: Coordinate[];
@@ -66,16 +78,21 @@ export interface AppState {
   telemetry: TelemetryData;
   weather: WeatherData;
   mapMode: MapMode;
+  sidebarTab: SidebarTab;
   uiVisible: boolean;
   uiElements: UiVisibility;
   selectedWaypointIndex: number | null;
+  checklist: PreFlightChecklist;
+  isFixingPath: boolean;
+  isInteracting: boolean; 
   
   // Simulation State
   isSimulating: boolean;
-  simProgress: number; // 0 to 1
+  simProgress: number; 
   simPosition: Coordinate | null;
   simFollowMode: boolean;
   simSpeedMultiplier: number;
+  activeScenario: SimScenario;
   
   // Persistence & Settings
   savedMissions: SavedMission[];
@@ -91,8 +108,13 @@ export interface AppState {
   refreshWeather: () => void;
   setSelectedWaypointIndex: (index: number | null) => void;
   setMapMode: (mode: MapMode) => void;
+  setSidebarTab: (tab: SidebarTab) => void;
   toggleUi: () => void;
   toggleUiElement: (element: keyof UiVisibility) => void;
+  toggleChecklistItem: (item: keyof PreFlightChecklist) => void;
+  autoCheckChecklist: () => void;
+  autoFixPath: () => void;
+  setIsInteracting: (interacting: boolean) => void;
   
   // Simulation Actions
   startSimulation: () => void;
