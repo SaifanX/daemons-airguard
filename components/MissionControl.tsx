@@ -8,7 +8,11 @@ import WeatherWidget from './WeatherWidget';
 import SimulationEngine from './SimulationEngine';
 import PlaybackControlHub from './PlaybackControlHub';
 import { useStore } from '../store';
-import { Hand, Navigation, Search, Undo2, Eye, EyeOff, LayoutGrid, Ghost, Wind, Loader2, Cpu } from 'lucide-react';
+import { 
+  Hand, Navigation, Search, Undo2, Eye, EyeOff, LayoutGrid, Ghost, 
+  Wind, Loader2, Cpu, ChevronRight, ChevronLeft, Shield, 
+  Settings2, MoreVertical, Layers, Keyboard, Command, Monitor, Zap
+} from 'lucide-react';
 
 const MissionControl: React.FC = () => {
   const { 
@@ -22,19 +26,46 @@ const MissionControl: React.FC = () => {
     isInteracting,
     toggleZenMode,
     toggleUiElement,
-    setMapCenter
+    setMapCenter,
+    startSimulation,
+    stopSimulation,
+    clearPath
   } = useStore();
 
   const [ghostMode, setGhostMode] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [showModularToggles, setShowModularToggles] = useState(false);
+  const [isControlMenuOpen, setIsControlMenuOpen] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsControlMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       
+      // Command Shortcuts
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         removeLastPoint();
@@ -45,12 +76,33 @@ const MissionControl: React.FC = () => {
         setMapMode('PAN');
       } else if (e.key.toLowerCase() === 's') {
         setMapMode('SEARCH');
+      } else if (e.key.toLowerCase() === 'z') {
+        toggleZenMode();
+        triggerGhost('ZEN');
+      } else if (e.key.toLowerCase() === 'm') {
+        toggleUiElement('sidebar');
+      } else if (e.key.toLowerCase() === 'w') {
+        toggleUiElement('weatherWidget');
+      } else if (e.key.toLowerCase() === 'a') {
+        toggleUiElement('aiAssistant');
+      } else if (e.key.toLowerCase() === 'r') {
+        toggleUiElement('riskMeter');
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        if (isSimulating) stopSimulation();
+        else if (flightPath.length >= 2) startSimulation();
+      } else if (e.key === 'Escape') {
+        setIsControlMenuOpen(false);
+        if (mapMode !== 'PAN') setMapMode('PAN');
+      } else if (e.key.toLowerCase() === 'c' && e.shiftKey) {
+        clearPath();
+        triggerGhost('CLEARED');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [removeLastPoint, setMapMode]);
+  }, [removeLastPoint, setMapMode, toggleZenMode, toggleUiElement, isSimulating, flightPath, startSimulation, stopSimulation, clearPath, mapMode]);
 
   const triggerGhost = (mode: string) => {
     setGhostMode(mode);
@@ -81,8 +133,62 @@ const MissionControl: React.FC = () => {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-slate-950 font-sans text-slate-100">
+      {/* Desktop Only Guard */}
+      {isMobile && (
+        <div className="fixed inset-0 z-[10000] bg-slate-950 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
+          <div className="w-20 h-20 bg-aviation-orange/10 rounded-3xl border border-aviation-orange/30 flex items-center justify-center mb-6">
+            <Monitor className="text-aviation-orange" size={40} />
+          </div>
+          <h2 className="text-2xl font-black uppercase tracking-tight mb-2">Desktop Environment Required</h2>
+          <p className="text-slate-500 text-sm max-w-xs leading-relaxed">
+            AirGuard Mission Control requires a larger viewport and keyboard peripherals for high-precision tactical operations.
+          </p>
+          <button onClick={() => window.history.back()} className="mt-8 text-xs font-bold text-aviation-orange uppercase tracking-widest flex items-center gap-2">
+            <ChevronLeft size={14} /> Return to Base
+          </button>
+        </div>
+      )}
+
+      {/* Map Layer */}
       <div className="absolute inset-0 z-0">
         <MapEngine />
+      </div>
+
+      {/* Power Moves Shortcut Button */}
+      <div 
+        className="absolute top-4 right-[300px] z-[2000]"
+        onMouseEnter={() => setShowShortcuts(true)}
+        onMouseLeave={() => setShowShortcuts(false)}
+      >
+        <button className="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700/50 flex items-center justify-center text-slate-500 hover:text-aviation-orange hover:border-aviation-orange transition-all shadow-xl backdrop-blur-md">
+          <Command size={18} />
+        </button>
+        
+        {showShortcuts && (
+          <div className="absolute top-12 right-0 w-56 bg-slate-900/95 border border-slate-700/60 rounded-2xl shadow-2xl p-4 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
+            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <Zap size={12} className="text-aviation-orange" />
+              Power Moves
+            </h4>
+            <div className="space-y-2">
+              {[
+                { k: 'Space', v: 'Simulate/Stop' },
+                { k: 'D', v: 'Draw Vector' },
+                { k: 'H', v: 'Hand Pan' },
+                { k: 'S', v: 'Global Search' },
+                { k: 'Z', v: 'Zen Mode' },
+                { k: 'Shift+C', v: 'Full Purge' },
+                { k: 'Esc', v: 'Reset Hud' },
+                { k: 'Ctrl+Z', v: 'Undo Point' }
+              ].map(item => (
+                <div key={item.k} className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400 font-bold">{item.v}</span>
+                  <kbd className="px-1.5 py-0.5 rounded bg-slate-950 text-[9px] font-mono border border-slate-800 text-aviation-orange">{item.k}</kbd>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {(mapMode === 'DRAW' || mapMode === 'SEARCH') && !isSimulating && (
@@ -117,6 +223,101 @@ const MissionControl: React.FC = () => {
 
       <SimulationEngine />
 
+      <div className={`transition-opacity duration-500 ${uiVisible ? 'opacity-100' : 'opacity-0'}`}>
+        {uiElements.sidebar && <Sidebar />}
+        
+        <div 
+          ref={menuRef}
+          className={`absolute top-4 transition-all duration-300 z-[2000] ${uiElements.sidebar ? 'left-[304px]' : 'left-4'}`}
+        >
+          <div className="relative">
+            <button 
+              onClick={() => setIsControlMenuOpen(!isControlMenuOpen)}
+              className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all shadow-2xl backdrop-blur-xl ${
+                isControlMenuOpen 
+                ? 'bg-aviation-orange border-aviation-orange text-white' 
+                : 'bg-slate-900/90 border-slate-700/60 text-slate-400 hover:text-white hover:border-slate-500'
+              }`}
+              title="Interface Controls (Esc)"
+            >
+              <Layers size={22} className={isControlMenuOpen ? 'animate-pulse' : ''} />
+            </button>
+
+            {isControlMenuOpen && (
+              <div className="absolute top-14 left-0 w-52 bg-slate-900/95 border border-slate-700/60 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl p-2 flex flex-col gap-1 animate-in slide-in-from-top-2 duration-200">
+                <div className="px-3 py-2 border-b border-slate-800 mb-1 flex justify-between items-center">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">HUD Config</span>
+                  <Keyboard size={12} className="text-slate-600" />
+                </div>
+
+                <button 
+                  onClick={() => { toggleZenMode(); setIsControlMenuOpen(false); }}
+                  className={`flex items-center justify-between w-full p-2.5 rounded-xl transition-all ${uiElements.isZenMode ? 'bg-aviation-orange/20 text-aviation-orange' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    {uiElements.isZenMode ? <EyeOff size={16} /> : <Eye size={16} />}
+                    <span className="text-xs font-bold uppercase tracking-tight">Zen Mode</span>
+                  </div>
+                  <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-[9px] border border-slate-700">Z</kbd>
+                </button>
+
+                <button 
+                  onClick={() => toggleUiElement('sidebar')}
+                  className={`flex items-center justify-between w-full p-2.5 rounded-xl transition-all ${uiElements.sidebar ? 'text-white bg-slate-800' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <LayoutGrid size={16} />
+                    <span className="text-xs font-bold uppercase tracking-tight">Main Menu</span>
+                  </div>
+                  <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-[9px] border border-slate-700">M</kbd>
+                </button>
+
+                <button 
+                  onClick={() => toggleUiElement('weatherWidget')}
+                  className={`flex items-center justify-between w-full p-2.5 rounded-xl transition-all ${uiElements.weatherWidget ? 'text-blue-400 bg-blue-500/10' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Wind size={16} />
+                    <span className="text-xs font-bold uppercase tracking-tight">Weather</span>
+                  </div>
+                  <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-[9px] border border-slate-700">W</kbd>
+                </button>
+
+                <button 
+                  onClick={() => toggleUiElement('aiAssistant')}
+                  className={`flex items-center justify-between w-full p-2.5 rounded-xl transition-all ${uiElements.aiAssistant ? 'text-aviation-orange bg-aviation-orange/10' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Ghost size={16} />
+                    <span className="text-xs font-bold uppercase tracking-tight">AI Advisor</span>
+                  </div>
+                  <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-[9px] border border-slate-700">A</kbd>
+                </button>
+
+                <button 
+                  onClick={() => toggleUiElement('riskMeter')}
+                  className={`flex items-center justify-between w-full p-2.5 rounded-xl transition-all ${uiElements.riskMeter ? 'text-red-400 bg-red-500/10' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Shield size={16} />
+                    <span className="text-xs font-bold uppercase tracking-tight">Risk Hub</span>
+                  </div>
+                  <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-[9px] border border-slate-700">R</kbd>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {uiElements.riskMeter && (
+          <>
+            <RiskMeter />
+            {isSimulating && <PlaybackControlHub />}
+          </>
+        )}
+        {uiElements.weatherWidget && <WeatherWidget />}
+      </div>
+
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center gap-4 w-full max-w-lg px-6">
         {mapMode === 'SEARCH' && (
           <div className="w-full animate-in slide-in-from-bottom-4 duration-300">
@@ -127,7 +328,7 @@ const MissionControl: React.FC = () => {
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="Find a location..."
+                  placeholder="Find a tactical location..."
                   className="w-full h-14 bg-slate-900/90 backdrop-blur-md border border-aviation-orange rounded-2xl px-6 pr-16 text-sm text-white focus:outline-none shadow-2xl"
                 />
                 <button 
@@ -156,52 +357,8 @@ const MissionControl: React.FC = () => {
         </div>
       </div>
 
-      <div className="absolute bottom-6 right-6 z-[2000] flex flex-col items-end gap-3">
+      <div className="absolute bottom-6 right-6 z-[2000]">
          {uiElements.aiAssistant && <AiAssistant />}
-         <div className="flex flex-col gap-2 items-end">
-            {showModularToggles && (
-               <div className="flex gap-2 p-2 bg-slate-900/80 border border-slate-800 rounded-2xl backdrop-blur-md animate-in slide-in-from-right-4 duration-300 shadow-2xl mb-1">
-                  <button 
-                    onClick={() => toggleUiElement('sidebar')}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${uiElements.sidebar ? 'bg-aviation-orange text-white' : 'text-slate-500 hover:text-white'}`}
-                    title="Menu"
-                  ><LayoutGrid size={18} /></button>
-                  <button 
-                    onClick={() => toggleUiElement('weatherWidget')}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${uiElements.weatherWidget ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-white'}`}
-                    title="Weather"
-                  ><Wind size={18} /></button>
-                  <button 
-                    onClick={() => toggleUiElement('aiAssistant')}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${uiElements.aiAssistant ? 'bg-aviation-orange text-white' : 'text-slate-500 hover:text-white'}`}
-                    title="Helper"
-                  ><Ghost size={18} /></button>
-               </div>
-            )}
-            
-            <div className="flex gap-2">
-               <button 
-                  onClick={() => setShowModularToggles(!showModularToggles)}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-slate-900/90 border border-slate-700 text-slate-400 hover:text-white shadow-xl transition-all backdrop-blur-md ${showModularToggles ? 'border-aviation-orange text-aviation-orange' : ''}`}
-               ><LayoutGrid size={22} /></button>
-               
-               <button 
-                  onClick={toggleZenMode}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl border backdrop-blur-md transition-all ${uiElements.isZenMode ? 'bg-aviation-orange border-aviation-orange text-white' : 'bg-slate-900/90 border-slate-700 text-slate-400 hover:text-white'}`}
-               >{uiElements.isZenMode ? <Eye size={22} /> : <EyeOff size={22} />}</button>
-            </div>
-         </div>
-      </div>
-
-      <div className={`transition-opacity duration-500 ${uiVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-        {uiElements.sidebar && <Sidebar />}
-        {uiElements.riskMeter && (
-          <>
-            <RiskMeter />
-            {isSimulating && <PlaybackControlHub />}
-          </>
-        )}
-        {uiElements.weatherWidget && <WeatherWidget />}
       </div>
     </div>
   );

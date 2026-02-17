@@ -1,5 +1,4 @@
 
-
 import { GoogleGenAI } from "@google/genai";
 import { RESTRICTED_ZONES } from "../data/zones";
 import { ZoneType } from "../types";
@@ -16,60 +15,69 @@ export const getCaptainCritique = async (
   path?: { lat: number, lng: number }[],
   overrideApiKey?: string
 ): Promise<string> => {
-  const envApiKey = typeof process !== 'undefined' ? process.env.API_KEY : '';
-  const activeApiKey = overrideApiKey || envApiKey || '';
+  // Prioritize environment variable as per safety guidelines
+  const activeApiKey = process.env.API_KEY || overrideApiKey || '';
 
   if (!activeApiKey) {
-    return "Please add your API key in the settings to talk to me!";
+    return "Mission Aborted: API Key missing. Please provide a valid Gemini API key in the Mission Settings.";
   }
 
-  // Creating instance right before call as per performance guidelines
+  // Always create a new instance right before the call to ensure the latest key is used
   const ai = new GoogleGenAI({ apiKey: activeApiKey });
   
   const weatherContext = weather 
     ? `- Weather: ${weather.condition}, Wind: ${weather.windSpeed} km/h`
-    : "- Weather not available";
+    : "- Weather telemetry not synced";
 
-  let zoneContext = "The path is clear of restricted areas.";
+  let zoneContext = "Primary airspace is clear of active restrictions.";
   if (path && path.length >= 2) {
-    // Fixed with named imports
-    const line = lineString(path.map(p => [p.lng, p.lat]));
-    const intersected = RESTRICTED_ZONES.filter(zone => {
-      if (zone.type === ZoneType.CONTROLLED) return false;
-      const polyCoords = [...zone.coordinates.map(c => [c.lng, c.lat]), [zone.coordinates[0].lng, zone.coordinates[0].lat]];
-      const poly = polygon([polyCoords as any]);
-      return booleanIntersects(line, poly);
-    }).map(z => z.name);
-    
-    if (intersected.length > 0) zoneContext = `Danger: Path enters ${intersected.join(", ")}.`;
+    try {
+      const line = lineString(path.map(p => [p.lng, p.lat]));
+      const intersected = RESTRICTED_ZONES.filter(zone => {
+        if (zone.type === ZoneType.CONTROLLED) return false;
+        const polyCoords = [...zone.coordinates.map(c => [c.lng, c.lat]), [zone.coordinates[0].lng, zone.coordinates[0].lat]];
+        const poly = polygon([polyCoords as any]);
+        return booleanIntersects(line, poly);
+      }).map(z => z.name);
+      
+      if (intersected.length > 0) zoneContext = `CRITICAL: Flight vector enters restricted zones: ${intersected.join(", ")}.`;
+    } catch (e) {
+      console.warn("Zone intersection check failed during AI context generation");
+    }
   }
 
   const systemInstruction = `
-    You are a friendly flight safety helper for a student project called AirGuard.
-    Keep answers short, simple, and helpful. Use simple words. No jargon.
+    You are 'Guard-1', a helpful AI flight safety assistant for AirGuard (a project by Team Daemons, winner of 2nd place at TechnoFest 2026, Stonehill School).
+    Your goal is to help drone pilots fly safely by providing concise, actionable advice based on the provided mission context.
     
-    CONTEXT:
-    - Risk Level: ${riskLevel}%
-    - Safety Warnings: ${violations.join(", ") || "None"}
-    - Drone: ${flightDetails.model} at ${flightDetails.altitude}m
-    - Weather: ${weatherContext}
-    - Map: ${zoneContext}
+    MISSION CONTEXT:
+    - Current Risk Assessment: ${riskLevel}%
+    - Safety Violations Found: ${violations.length > 0 ? violations.join(", ") : "None Detected"}
+    - Drone Config: ${flightDetails.model} (Operating Height: ${flightDetails.altitude}m)
+    - ${weatherContext}
+    - Airspace Status: ${zoneContext}
 
-    Be encouraging and supportive to the user.
+    PERSONALITY:
+    - Professional, encouraging, and clear.
+    - Use aviation terminology where appropriate but keep it accessible.
+    - If risk is high (>60%), be more urgent and professional.
+    - Always reference safety first.
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview", // Low latency flash model
+      model: "gemini-3-flash-preview",
       contents: userMessage,
       config: {
         systemInstruction,
-        temperature: 0.5, // Faster, more consistent responses
+        temperature: 0.7,
       }
     });
 
-    return response.text || "I'm not sure, could you rephrase?";
+    // Access .text property as per SDK requirements (do not call as a function)
+    return response.text || "Communication relay weak. Please rephrase your request, Pilot.";
   } catch (error: any) {
-    return "Sorry, I'm having trouble connecting to my brain! Check your API key.";
+    console.error("Gemini API Error:", error);
+    return "Relay Error: Could not connect to the AI Tactical Core. Verify your API key and network connection.";
   }
 };

@@ -1,5 +1,4 @@
 
-
 import React, { useEffect, useRef } from 'react';
 import { useStore } from '../store';
 import { lineString, length, along, bearing } from '@turf/turf';
@@ -59,7 +58,6 @@ const SimulationEngine: React.FC = () => {
       let coords = [...currentPoint.geometry.coordinates];
 
       // Physical effects
-      // Type mismatch resolved by updating SimScenario in types.ts
       if (activeScenario === 'HEAVY_WEATHER') {
           const jitter = 0.0004;
           coords[0] += (Math.random() - 0.5) * jitter;
@@ -73,15 +71,30 @@ const SimulationEngine: React.FC = () => {
       setSimProgress(progress);
       setSimPosition({ lat: coords[1], lng: coords[0] });
       
-      const batteryDrain = activeScenario === 'EMERGENCY_LANDING' ? progress * 95 : progress * 5;
+      // Battery Simulation Logic
+      // Base discharge rate per meter
+      const baseDischarge = droneSettings.model.includes('Nano') ? 0.00005 : 0.00008;
+      // Modifier based on scenario
+      let scenarioMod = 1.0;
+      if (activeScenario === 'HEAVY_WEATHER') scenarioMod = 2.5;
+      if (activeScenario === 'EMERGENCY_LANDING') scenarioMod = 15.0; // Rapid drain
+      
+      const batteryLevel = Math.max(0, 100 - (distanceRef.current * baseDischarge * scenarioMod));
+
       updateTelemetry({
         speed: (baseDroneSpeed * simSpeedMultiplier) / 3.6, // Display in km/h effectively
         heading: b,
-        battery: Math.max(0, 100 - batteryDrain),
+        battery: Math.round(batteryLevel),
         altitudeAGL: droneSettings.altitude + (activeScenario === 'HEAVY_WEATHER' ? (Math.random() - 0.5) * 6 : 0),
         signalStrength: Math.max(5, 100 - (distanceRef.current / 120)),
         satCount: 18 + Math.floor(Math.random() * 4)
       });
+
+      if (batteryLevel <= 0 && activeScenario === 'EMERGENCY_LANDING') {
+          stopSimulation();
+          return;
+      }
+
     } catch (err) {
       stopSimulation();
       return;
