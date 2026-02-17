@@ -8,6 +8,7 @@ AirGuard is a drone pre-flight planning tool built in 24 hours for the **TechnoF
 ## 🚀 Team Daemons
 - Built with ❤️ for TechnoFest 2026.
 - GitHub: [SaifanX/Daemons-AirGuard](https://github.com/SaifanX/Daemons-AirGuard)
+- Access Here: [Airguard](https://airguard-1.netlify.app)
 
 ## ✨ Features
 - **Interactive Map:** Draw your flight path and see instant risk scores.
@@ -25,9 +26,6 @@ AirGuard is a drone pre-flight planning tool built in 24 hours for the **TechnoF
 
 ## 🏆 Awards
 - **2nd Prize** at TechnoFest 2026 (Junior Category - Non-BAASC Schools) - February 2026.
-
-## Access Here:
-https://airguard-1.netlify.app
 
 ## 📝 Disclaimer
 This project was made for a student competition. Always follow your local aviation authority's actual laws and use official apps for real drone flying!
