@@ -1,4 +1,5 @@
 
+// Removed Gemini API key input to comply with guidelines prohibiting user-provided keys via UI.
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../store';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +8,7 @@ import {
   Plane, Trash2, Settings as SettingsIcon, Save, 
   History, X, ChevronRight, Play, Square, 
   Target, Zap, Wind, ShieldCheck,
-  Wand2, Download, ExternalLink, Battery, Radio, Gauge, FileText, Check, LayoutDashboard, ChevronLeft, FastForward, Key, Eye, EyeOff, Shield, CloudSun, Clock, Navigation2, FileJson, Map as MapIcon, Scale, AlertOctagon, Info, Trophy, FileType
+  Wand2, Download, ExternalLink, Battery, Radio, Gauge, FileText, Check, LayoutDashboard, ChevronLeft, FastForward, Key, Eye, EyeOff, Shield, CloudSun, Clock, Navigation2, FileJson, Map as MapIcon, Scale, AlertOctagon, Info, Trophy, FileType, BookOpen, AlertCircle, AlertTriangle
 } from 'lucide-react';
 import { Coordinate, PreFlightChecklist as ChecklistType, SidebarTab } from '../types';
 import { exportToGPX, exportToKML } from '../utils/exportUtils';
@@ -55,7 +56,7 @@ const Sidebar: React.FC = () => {
     isSimulating, startSimulation,
     checklist, toggleChecklistItem, 
     sidebarTab, setSidebarTab, autoCheckChecklist,
-    userApiKey, setApiKey, weatherApiKey, setWeatherApiKey,
+    weatherApiKey, setWeatherApiKey,
     riskLevel, autoFixPath, violations, isFixingPath
   } = useStore();
 
@@ -116,13 +117,13 @@ const Sidebar: React.FC = () => {
       </div>
 
       <div className="px-4 flex border-b border-slate-800 overflow-x-auto scrollbar-hide">
-        {(['SETUP', 'CHECKLIST', 'SAVED', 'SAFETY', 'SETTINGS'] as SidebarTab[]).map(tab => (
+        {(['SETUP', 'CHECKLIST', 'SAVED', 'COMPLIANCE', 'SETTINGS'] as SidebarTab[]).map(tab => (
            <button
              key={tab}
              onClick={() => setSidebarTab(tab)}
              className={`flex-shrink-0 px-3 py-3 text-[9px] font-black uppercase tracking-widest transition-all border-b-2 ${sidebarTab === tab ? 'border-aviation-orange text-aviation-orange' : 'border-transparent text-slate-500'}`}
            >
-             {tab === 'SAVED' ? 'Routes' : tab === 'SAFETY' ? 'Safety' : tab}
+             {tab === 'SAVED' ? 'Routes' : tab === 'COMPLIANCE' ? 'Rules' : tab}
            </button>
         ))}
       </div>
@@ -270,9 +271,94 @@ const Sidebar: React.FC = () => {
           </div>
         )}
 
+        {sidebarTab === 'COMPLIANCE' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="flex justify-between items-center px-1">
+              <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Regulatory Rules</h3>
+              <Scale size={14} className="text-slate-500" />
+            </div>
+
+            {/* Current Violation Alert - Quick Access */}
+            {violations.length > 0 && (
+              <div className="bg-red-500/10 border border-red-500/40 rounded-xl p-4 text-center">
+                <div className="flex items-center justify-center gap-2 text-red-400 mb-1">
+                  <AlertCircle size={14} />
+                  <p className="text-[10px] font-black uppercase">Active Violations</p>
+                </div>
+                <p className="text-[8px] text-slate-400 italic">Review current mission vector for non-compliance.</p>
+                <button 
+                  onClick={() => setSidebarTab('SAFETY' as any)} 
+                  className="mt-2 text-[8px] font-black text-white bg-red-600 px-3 py-1 rounded-full uppercase hover:bg-red-500 transition-all"
+                >
+                  View Safety Hub
+                </button>
+              </div>
+            )}
+
+            {/* India Drone Rules 2021 Reference */}
+            <div className="space-y-4">
+              {[
+                {
+                  rule: "Rule 31: Airspace Categories",
+                  icon: <MapIcon size={14} className="text-blue-400" />,
+                  desc: "Airspace divided into Green (No permission), Yellow (Controlled), and Red (Prohibited) zones.",
+                  active: violations.some(v => v.includes('ZONE'))
+                },
+                {
+                  rule: "Rule 33: Altitude Limit",
+                  icon: <Navigation2 size={14} className="text-aviation-orange" />,
+                  desc: "Maximum flight altitude restricted to 120m (400ft) AGL in Green zones.",
+                  active: violations.some(v => v.includes('RULE_33'))
+                },
+                {
+                  rule: "Rule 36: VLOS Radius",
+                  icon: <Eye size={14} className="text-emerald-400" />,
+                  desc: "Pilot must maintain direct Visual Line of Sight. Typical limit is 2km radial distance.",
+                  active: violations.some(v => v.includes('BVLOS'))
+                },
+                {
+                  rule: "Rule 14: Registration (UIN)",
+                  icon: <Shield size={14} className="text-purple-400" />,
+                  desc: "Unique ID required for all drones except Nano class. No drone to fly without valid UIN."
+                }
+              ].map((item, idx) => (
+                <div 
+                  key={idx} 
+                  className={`p-4 rounded-xl border transition-all ${item.active ? 'bg-red-500/5 border-red-500/30' : 'bg-slate-950 border-slate-800 hover:border-slate-700'}`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    {item.icon}
+                    <h4 className={`text-[10px] font-black uppercase tracking-tight ${item.active ? 'text-red-400' : 'text-slate-200'}`}>
+                      {item.rule}
+                    </h4>
+                  </div>
+                  <p className="text-[9px] text-slate-500 leading-relaxed italic">
+                    {item.desc}
+                  </p>
+                  {item.active && (
+                    <div className="mt-2 flex items-center gap-1.5 text-[8px] font-black text-red-500 uppercase animate-pulse">
+                      <AlertTriangle size={10} />
+                      Current Vector Breach
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-4 border-t border-slate-800">
+               <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800">
+                  <p className="text-[8px] text-slate-500 font-mono leading-relaxed">
+                    Source: Ministry of Civil Aviation (MoCA)<br/>
+                    Digital Sky Compliance Framework v2.1
+                  </p>
+               </div>
+            </div>
+          </div>
+        )}
+
         {sidebarTab === 'SAFETY' && (
           <div className="space-y-6 animate-in fade-in duration-300">
-            <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Safety Rules</h3>
+            <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Safety Hub</h3>
             {violations.length === 0 ? (
               <div className="bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-4 flex flex-col items-center gap-2 text-center">
                 <ShieldCheck size={28} className="text-emerald-400" />
@@ -294,6 +380,13 @@ const Sidebar: React.FC = () => {
                 <button onClick={autoFixPath} className="w-full py-3 bg-aviation-orange rounded-xl text-[10px] font-black text-white uppercase tracking-widest shadow-lg shadow-orange-950/20">Auto-Reroute Vector</button>
               </div>
             )}
+            <button 
+              onClick={() => setSidebarTab('COMPLIANCE')}
+              className="w-full py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-[9px] font-bold text-slate-500 hover:text-white transition-all flex items-center justify-center gap-2"
+            >
+              <BookOpen size={12} />
+              Read Drone Rules 2021
+            </button>
           </div>
         )}
 
@@ -327,10 +420,6 @@ const Sidebar: React.FC = () => {
              <section className="space-y-4">
               <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Configuration</h3>
               <div className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[9px] text-slate-400 font-bold flex items-center gap-1"><Key size={10}/> Gemini AI Key</label>
-                  <input type="password" value={userApiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Enter key..." className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-aviation-orange" />
-                </div>
                 <div className="space-y-1">
                   <label className="text-[9px] text-slate-400 font-bold flex items-center gap-1"><Wind size={10}/> Weather Data Key</label>
                   <input type="password" value={weatherApiKey} onChange={(e) => setWeatherApiKey(e.target.value)} placeholder="Enter key..." className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-400" />

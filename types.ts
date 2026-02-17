@@ -1,5 +1,4 @@
 
-
 export interface Coordinate {
   lat: number;
   lng: number;
@@ -51,7 +50,7 @@ export interface SavedMission {
 }
 
 export type MapMode = 'PAN' | 'DRAW' | 'SEARCH';
-export type SidebarTab = 'SETUP' | 'CHECKLIST' | 'SAVED' | 'SETTINGS' | 'SAFETY';
+export type SidebarTab = 'SETUP' | 'CHECKLIST' | 'SAVED' | 'SETTINGS' | 'SAFETY' | 'COMPLIANCE';
 
 export interface UiVisibility {
   sidebar: boolean;

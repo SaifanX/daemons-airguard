@@ -1,5 +1,4 @@
 
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageSquare, Send, X, Bot, FileText, Loader2, Activity, ShieldAlert, Zap, Signal, SignalHigh, SignalLow } from 'lucide-react';
 import { useStore } from '../store';
@@ -23,7 +22,7 @@ const AiAssistant: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastAutoTriggeredRisk, setLastAutoTriggeredRisk] = useState(0);
   
-  const { riskLevel, violations, droneSettings, weather, flightPath, telemetry, userApiKey } = useStore();
+  const { riskLevel, violations, droneSettings, weather, flightPath, telemetry } = useStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -56,7 +55,6 @@ const AiAssistant: React.FC = () => {
     let flightStats;
     try {
         if (flightPath.length >= 2) {
-            // Fixed with named imports
             const line = lineString(flightPath.map(p => [p.lng, p.lat]));
             flightStats = { 
                 distance: parseFloat(length(line, { units: 'kilometers' }).toFixed(2)), 
@@ -65,7 +63,6 @@ const AiAssistant: React.FC = () => {
         }
     } catch (e) {}
 
-    // Model is already configured for flash speed in service
     const aiResponseText = await getCaptainCritique(
       textToSend,
       riskLevel,
@@ -74,8 +71,7 @@ const AiAssistant: React.FC = () => {
       weather,
       flightStats,
       telemetry,
-      flightPath,
-      userApiKey
+      flightPath
     );
 
     const aiMsg: Message = { id: (Date.now() + 1).toString(), sender: 'ai', text: aiResponseText };

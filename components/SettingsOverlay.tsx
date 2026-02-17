@@ -1,20 +1,18 @@
 
+// Complying with Gemini API guidelines by removing UI for entering or managing the API key.
 import React, { useState } from 'react';
 import { useStore } from '../store';
 import { X, Shield, Key, Eye, EyeOff, Save, CheckCircle2, AlertTriangle, Cpu, CloudSun } from 'lucide-react';
 
 const SettingsOverlay: React.FC = () => {
-  const { userApiKey, setApiKey, weatherApiKey, setWeatherApiKey, toggleUiElement, uiElements } = useStore();
-  const [keyInput, setKeyInput] = useState(userApiKey);
+  const { weatherApiKey, setWeatherApiKey, toggleUiElement, uiElements } = useStore();
   const [weatherInput, setWeatherInput] = useState(weatherApiKey);
-  const [showKey, setShowKey] = useState(false);
   const [showWeatherKey, setShowWeatherKey] = useState(false);
   const [savedStatus, setSavedStatus] = useState(false);
 
   if (!uiElements.settings) return null;
 
   const handleSave = () => {
-    setApiKey(keyInput);
     setWeatherApiKey(weatherInput);
     setSavedStatus(true);
     setTimeout(() => setSavedStatus(false), 2000);
@@ -48,30 +46,6 @@ const SettingsOverlay: React.FC = () => {
         <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
           <section className="space-y-6">
             <div className="flex items-center gap-2">
-              <Key className="text-aviation-orange" size={16} />
-              <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">AI Tactical Link (Gemini API)</h3>
-            </div>
-            <div className="space-y-4">
-              <div className="relative">
-                <input 
-                  type={showKey ? "text" : "password"} 
-                  value={keyInput}
-                  onChange={(e) => setKeyInput(e.target.value)}
-                  placeholder="Enter Gemini API Key..."
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 focus:border-aviation-orange outline-none font-mono pr-12 transition-all"
-                />
-                <button 
-                  onClick={() => setShowKey(!showKey)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                >
-                  {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-6 pt-6 border-t border-slate-800">
-            <div className="flex items-center gap-2">
               <CloudSun className="text-blue-400" size={16} />
               <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">Environmental Data (OpenWeatherMap)</h3>
             </div>
@@ -92,7 +66,7 @@ const SettingsOverlay: React.FC = () => {
                 </button>
               </div>
               <p className="text-[10px] text-slate-500 leading-relaxed italic">
-                Optional: Providing an OpenWeatherMap API key enables high-fidelity localized weather telemetry.
+                Optional: Providing localized keys enables specific telemetry. Environmental data is fetched using your provided key.
               </p>
             </div>
           </section>

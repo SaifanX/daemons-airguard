@@ -1,11 +1,10 @@
 
-
+// Fixed TypeScript errors by removing window.process access and complying with Gemini API guidelines.
 import { create } from 'zustand';
 import { AppState, WeatherData, TelemetryData, Coordinate, SavedMission, SimScenario, PreFlightChecklist, SidebarTab, UiVisibility } from './types';
 import { calculatePathRisk, intelligentReroute } from './utils/flightLogic';
 
 const STORAGE_KEY = 'airguard_missions_v3';
-const API_KEY_STORAGE = 'airguard_api_key';
 const WEATHER_KEY_STORAGE = 'airguard_weather_key';
 
 const generateWeather = (override?: Partial<WeatherData>): WeatherData => {
@@ -66,7 +65,7 @@ export const useStore = create<AppState & { mapCenter: [number, number], setMapC
     aiAssistant: true,
     settings: false,
     isZenMode: false,
-    checklist: false, // Initialized checklist visibility
+    checklist: false,
   },
   selectedWaypointIndex: null,
   checklist: initialChecklist,
@@ -82,7 +81,7 @@ export const useStore = create<AppState & { mapCenter: [number, number], setMapC
   activeScenario: 'STANDARD',
 
   savedMissions: getSavedMissions(),
-  userApiKey: localStorage.getItem(API_KEY_STORAGE) || '',
+  userApiKey: '', // Complying with guidelines: API key must be from process.env.API_KEY exclusively.
   weatherApiKey: localStorage.getItem(WEATHER_KEY_STORAGE) || '',
 
   setMapCenter: (center) => set({ mapCenter: center }),
@@ -237,7 +236,6 @@ export const useStore = create<AppState & { mapCenter: [number, number], setMapC
   
   applyScenario: (scenario) => {
     set({ activeScenario: scenario });
-    // Updated to support tactical scenario naming conventions
     if (scenario === 'WINDY' || scenario === 'HEAVY_WEATHER') {
       set({ weather: generateWeather({ windSpeed: 30, condition: 'Storm' }) });
     } else if (scenario === 'LOW_BATTERY' || scenario === 'EMERGENCY_LANDING') {
@@ -285,8 +283,8 @@ export const useStore = create<AppState & { mapCenter: [number, number], setMapC
   },
 
   setApiKey: (key) => {
-    localStorage.setItem(API_KEY_STORAGE, key);
-    set({ userApiKey: key });
+    // API key management is prohibited by guidelines. It must be provided via process.env.API_KEY.
+    set({ userApiKey: '' });
   },
 
   setWeatherApiKey: (key) => {

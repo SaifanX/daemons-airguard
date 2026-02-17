@@ -12,18 +12,10 @@ export const getCaptainCritique = async (
   weather?: any,
   flightStats?: { distance: number; waypoints: number },
   telemetry?: { speed: number; heading: number; battery: number; altitudeAGL: number },
-  path?: { lat: number, lng: number }[],
-  overrideApiKey?: string
+  path?: { lat: number, lng: number }[]
 ): Promise<string> => {
-  // Prioritize environment variable as per safety guidelines
-  const activeApiKey = process.env.API_KEY || overrideApiKey || '';
-
-  if (!activeApiKey) {
-    return "Mission Aborted: API Key missing. Please provide a valid Gemini API key in the Mission Settings.";
-  }
-
-  // Always create a new instance right before the call to ensure the latest key is used
-  const ai = new GoogleGenAI({ apiKey: activeApiKey });
+  // Use the pre-configured environment variable exclusively.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const weatherContext = weather 
     ? `- Weather: ${weather.condition}, Wind: ${weather.windSpeed} km/h`
@@ -74,10 +66,9 @@ export const getCaptainCritique = async (
       }
     });
 
-    // Access .text property as per SDK requirements (do not call as a function)
     return response.text || "Communication relay weak. Please rephrase your request, Pilot.";
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    return "Relay Error: Could not connect to the AI Tactical Core. Verify your API key and network connection.";
+    return "Relay Error: Could not connect to the AI Tactical Core. Verify your connection.";
   }
 };

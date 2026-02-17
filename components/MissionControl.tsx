@@ -11,7 +11,7 @@ import { useStore } from '../store';
 import { 
   Hand, Navigation, Search, Undo2, Eye, EyeOff, LayoutGrid, Ghost, 
   Wind, Loader2, Cpu, ChevronRight, ChevronLeft, Shield, 
-  Settings2, MoreVertical, Layers, Keyboard, Command, Monitor, Zap
+  Settings2, MoreVertical, Layers, Keyboard, Command, Monitor, Zap, Info, X
 } from 'lucide-react';
 
 const MissionControl: React.FC = () => {
@@ -36,20 +36,10 @@ const MissionControl: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isControlMenuOpen, setIsControlMenuOpen] = useState(false);
-  const [showShortcuts, setShowShortcuts] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -65,7 +55,6 @@ const MissionControl: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       
-      // Command Shortcuts
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         removeLastPoint();
@@ -92,6 +81,7 @@ const MissionControl: React.FC = () => {
         if (isSimulating) stopSimulation();
         else if (flightPath.length >= 2) startSimulation();
       } else if (e.key === 'Escape') {
+        if (showShortcutsHelp) setShowShortcutsHelp(false);
         setIsControlMenuOpen(false);
         if (mapMode !== 'PAN') setMapMode('PAN');
       } else if (e.key.toLowerCase() === 'c' && e.shiftKey) {
@@ -102,7 +92,7 @@ const MissionControl: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [removeLastPoint, setMapMode, toggleZenMode, toggleUiElement, isSimulating, flightPath, startSimulation, stopSimulation, clearPath, mapMode]);
+  }, [removeLastPoint, setMapMode, toggleZenMode, toggleUiElement, isSimulating, flightPath, startSimulation, stopSimulation, clearPath, mapMode, showShortcutsHelp]);
 
   const triggerGhost = (mode: string) => {
     setGhostMode(mode);
@@ -131,64 +121,100 @@ const MissionControl: React.FC = () => {
     }
   };
 
+  const shortcuts = [
+    { cat: 'Tools', items: [
+      { key: 'D', desc: 'Draw Vector Mode' },
+      { key: 'H', desc: 'Hand Pan Mode' },
+      { key: 'S', desc: 'Global Tactical Search' },
+    ]},
+    { cat: 'HUD Controls', items: [
+      { key: 'Z', desc: 'Zen Mode Toggle' },
+      { key: 'M', desc: 'Sidebar/Main Menu' },
+      { key: 'W', desc: 'Weather Widget' },
+      { key: 'A', desc: 'AI Tactical Assistant' },
+      { key: 'R', desc: 'Risk Assessment Meter' },
+    ]},
+    { cat: 'Mission Ops', items: [
+      { key: 'Space', desc: 'Start/Stop Simulation' },
+      { key: 'Ctrl+Z', desc: 'Undo Last Point' },
+      { key: 'Shift+C', desc: 'Purge Current Vector' },
+      { key: 'Esc', desc: 'Reset Interface' },
+    ]}
+  ];
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-slate-950 font-sans text-slate-100">
-      {/* Desktop Only Guard */}
-      {isMobile && (
-        <div className="fixed inset-0 z-[10000] bg-slate-950 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
-          <div className="w-20 h-20 bg-aviation-orange/10 rounded-3xl border border-aviation-orange/30 flex items-center justify-center mb-6">
-            <Monitor className="text-aviation-orange" size={40} />
-          </div>
-          <h2 className="text-2xl font-black uppercase tracking-tight mb-2">Desktop Environment Required</h2>
-          <p className="text-slate-500 text-sm max-w-xs leading-relaxed">
-            AirGuard Mission Control requires a larger viewport and keyboard peripherals for high-precision tactical operations.
-          </p>
-          <button onClick={() => window.history.back()} className="mt-8 text-xs font-bold text-aviation-orange uppercase tracking-widest flex items-center gap-2">
-            <ChevronLeft size={14} /> Return to Base
-          </button>
-        </div>
-      )}
-
       {/* Map Layer */}
       <div className="absolute inset-0 z-0">
         <MapEngine />
       </div>
 
-      {/* Power Moves Shortcut Button */}
-      <div 
-        className="absolute top-4 right-[300px] z-[2000]"
-        onMouseEnter={() => setShowShortcuts(true)}
-        onMouseLeave={() => setShowShortcuts(false)}
-      >
-        <button className="w-10 h-10 rounded-full bg-slate-900/90 border border-slate-700/50 flex items-center justify-center text-slate-500 hover:text-aviation-orange hover:border-aviation-orange transition-all shadow-xl backdrop-blur-md">
-          <Command size={18} />
-        </button>
-        
-        {showShortcuts && (
-          <div className="absolute top-12 right-0 w-56 bg-slate-900/95 border border-slate-700/60 rounded-2xl shadow-2xl p-4 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
-            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-              <Zap size={12} className="text-aviation-orange" />
-              Power Moves
-            </h4>
-            <div className="space-y-2">
-              {[
-                { k: 'Space', v: 'Simulate/Stop' },
-                { k: 'D', v: 'Draw Vector' },
-                { k: 'H', v: 'Hand Pan' },
-                { k: 'S', v: 'Global Search' },
-                { k: 'Z', v: 'Zen Mode' },
-                { k: 'Shift+C', v: 'Full Purge' },
-                { k: 'Esc', v: 'Reset Hud' },
-                { k: 'Ctrl+Z', v: 'Undo Point' }
-              ].map(item => (
-                <div key={item.k} className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 font-bold">{item.v}</span>
-                  <kbd className="px-1.5 py-0.5 rounded bg-slate-950 text-[9px] font-mono border border-slate-800 text-aviation-orange">{item.k}</kbd>
+      {/* Shortcuts Modal */}
+      {showShortcutsHelp && (
+        <div 
+          className="fixed inset-0 z-[6000] flex items-center justify-center bg-slate-950/80 backdrop-blur-xl animate-in fade-in duration-300"
+          onClick={() => setShowShortcutsHelp(false)}
+        >
+          <div 
+            className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/60 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* HUD Scanline Effect */}
+            <div className="absolute inset-0 pointer-events-none opacity-10">
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[1] bg-[size:100%_2px,3px_100%]"></div>
+            </div>
+
+            <div className="p-8 border-b border-slate-800 flex justify-between items-center bg-slate-800/40">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-aviation-orange/10 border border-aviation-orange/40 flex items-center justify-center">
+                  <Keyboard size={24} className="text-aviation-orange" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold uppercase tracking-tight">Tactical Shortcuts</h2>
+                  <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">System Interaction Map</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowShortcutsHelp(false)}
+                className="w-10 h-10 rounded-full hover:bg-slate-800 flex items-center justify-center transition-all text-slate-500 hover:text-white"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-8 grid md:grid-cols-3 gap-8">
+              {shortcuts.map((group, i) => (
+                <div key={i} className="space-y-4">
+                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-2">{group.cat}</h3>
+                  <div className="space-y-3">
+                    {group.items.map((item, j) => (
+                      <div key={j} className="flex items-center justify-between gap-4">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase leading-tight">{item.desc}</span>
+                        <kbd className="px-2 py-1 rounded bg-slate-950 border border-slate-800 text-aviation-orange font-mono text-[10px] shadow-lg">{item.key}</kbd>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
+
+            <div className="p-6 bg-slate-950/50 border-t border-slate-800 flex justify-center">
+               <p className="text-[9px] text-slate-600 font-mono uppercase tracking-[0.2em]">Press [ESC] to terminate help sequence</p>
+            </div>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Floating Info Button */}
+      <div className="absolute bottom-24 right-6 z-[2000]">
+        <button 
+          onClick={() => setShowShortcutsHelp(true)}
+          className="w-12 h-12 rounded-2xl bg-slate-900/90 border border-slate-700/60 flex items-center justify-center text-slate-400 hover:text-aviation-orange hover:border-aviation-orange transition-all shadow-2xl backdrop-blur-md group"
+          title="Keyboard Shortcuts (I)"
+        >
+          <Info size={22} className="group-hover:scale-110 transition-transform" />
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-aviation-orange rounded-full animate-pulse"></div>
+        </button>
       </div>
 
       {(mapMode === 'DRAW' || mapMode === 'SEARCH') && !isSimulating && (
