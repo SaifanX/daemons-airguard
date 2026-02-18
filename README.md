@@ -1,31 +1,20 @@
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-# AirGuard - TechnoFest 2026 Submission
+# Run and deploy your AI Studio app
 
-**Winner: 2nd Prize | Category: Junior (Non-BAASC Schools) | State Level**
+This contains everything you need to run your app locally.
 
-AirGuard is a drone pre-flight planning tool built in 24 hours for the **TechnoFest 2026 State Level Hackathon** hosted by Stonehill International School. Our goal was to create an easy-to-use interface for drone pilots that automatically checks for safety rules, weather conditions, and restricted airspaces.
+View your app in AI Studio: https://ai.studio/apps/drive/1eYbnciGUUzn53bMuOK3_q038EjTaSwmE
 
-## 🚀 Team Daemons
-- Built with ❤️ for TechnoFest 2026.
-- GitHub: [SaifanX/Daemons-AirGuard](https://github.com/SaifanX/Daemons-AirGuard)
-- Access Here: [Airguard](https://airguard-1.netlify.app)
+## Run Locally
 
-## ✨ Features
-- **Interactive Map:** Draw your flight path and see instant risk scores.
-- **Smart AI Assistant:** Powered by Google Gemini to help you understand flight rules.
-- **Real-time Weather:** Checks wind and visibility to see if it's safe to fly.
-- **Mission Export:** Save your plans as GPX or KML files.
-- **Live Simulation:** See a virtual flight of your drone before you take off.
+**Prerequisites:**  Node.js
 
-## 🛠️ Tech Stack
-- **Frontend:** React + Tailwind CSS
-- **Maps:** Leaflet & Turf.js
-- **AI:** Google GenAI SDK (Gemini-3-Flash)
-- **Icons:** Lucide-React
-- **State Management:** Zustand
 
-## 🏆 Awards
-- **2nd Prize** at TechnoFest 2026 (Junior Category - Non-BAASC Schools) - February 2026.
-
-## 📝 Disclaimer
-This project was made for a student competition. Always follow your local aviation authority's actual laws and use official apps for real drone flying!
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

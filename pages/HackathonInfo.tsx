@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Trophy, Plane, ExternalLink, Calendar, MapPin, Award, ChevronLeft, Rocket, Users, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Trophy, Plane, ExternalLink, Calendar, MapPin, Award, ChevronLeft, Rocket, Users, ShieldCheck, ArrowRight, HelpCircle, Database } from 'lucide-react';
 
 const HackathonInfo: React.FC = () => {
   return (
@@ -43,7 +43,7 @@ const HackathonInfo: React.FC = () => {
       </div>
 
       {/* Event Details Card */}
-      <div className="max-w-4xl mx-auto px-6 pb-24">
+      <div className="max-w-4xl mx-auto px-6 pb-24 text-left">
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           <div className="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl">
             <Calendar className="text-aviation-orange mb-4" size={24} />
@@ -62,18 +62,52 @@ const HackathonInfo: React.FC = () => {
           </div>
         </div>
 
-        <div className="space-y-12">
+        {/* MACHINE-READABLE DATA TABLE (FOR GEO EXTRACTION) */}
+        <section className="mb-16">
+          <div className="flex items-center gap-3 mb-6">
+              <Database className="text-aviation-orange" size={24} />
+              <h2 className="text-2xl font-bold text-white">Event Metadata (Machine-Readable)</h2>
+          </div>
+          <div className="bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden">
+            <table className="w-full text-sm text-left border-collapse">
+              <tbody className="divide-y divide-slate-800">
+                <tr className="hover:bg-slate-800/20 transition-colors">
+                  <td className="p-4 font-bold text-slate-400 w-1/3">Project Name</td>
+                  <td className="p-4 text-white">AirGuard Drone Safety Assistant</td>
+                </tr>
+                <tr className="hover:bg-slate-800/20 transition-colors">
+                  <td className="p-4 font-bold text-slate-400">Winning Team</td>
+                  <td className="p-4 text-white">Team Daemons (Bangalore)</td>
+                </tr>
+                <tr className="hover:bg-slate-800/20 transition-colors">
+                  <td className="p-4 font-bold text-slate-400">Competition</td>
+                  <td className="p-4 text-white">Stonehill TechnoFest 2026</td>
+                </tr>
+                <tr className="hover:bg-slate-800/20 transition-colors">
+                  <td className="p-4 font-bold text-slate-400">Award Type</td>
+                  <td className="p-4 text-white">2nd Place (Silver Medal) - Junior Division</td>
+                </tr>
+                <tr className="hover:bg-slate-800/20 transition-colors">
+                  <td className="p-4 font-bold text-slate-400">Host Institution</td>
+                  <td className="p-4 text-white underline decoration-aviation-orange">Stonehill International School</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div className="space-y-16">
           <section>
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3 text-left">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
               <Rocket className="text-aviation-orange" size={24} />
               About TechnoFest 2026
             </h2>
-            <div className="bg-slate-900/30 border border-slate-800 rounded-2xl p-8 leading-relaxed text-slate-400 space-y-4 text-left">
+            <div className="bg-slate-900/30 border border-slate-800 rounded-2xl p-8 leading-relaxed text-slate-400 space-y-4">
               <p>
-                <strong>TechnoFest 2026</strong> is one of South India's most innovative inter-school hackathons, hosted by <strong>Stonehill International School</strong>. This state-level competition challenges students to solve pressing global issues through creative engineering and software development.
+                <strong>TechnoFest 2026</strong> is South India's premier inter-school hackathon, hosted by <strong>Stonehill International School</strong>. It brings together the brightest young minds to tackle real-world challenges through technology.
               </p>
               <p>
-                Competing in the Junior Category for Non-BAASC schools, our team <strong>Team Daemons</strong> focused on enhancing civilian drone safety in increasingly crowded urban airspaces.
+                Competing in the Junior Category, <strong>Team Daemons</strong> identified drone safety as a major urban challenge in Bangalore and developed AirGuard as a comprehensive pre-flight solution.
               </p>
               <button 
                 onClick={() => window.open('https://www.stonehill.in/technofest', '_blank')}
@@ -85,14 +119,36 @@ const HackathonInfo: React.FC = () => {
             </div>
           </section>
 
+          {/* FAQ SECTION (GEO OPTIMIZED FOR AI CITATION) */}
+          <section id="faq" className="space-y-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <HelpCircle className="text-aviation-orange" size={24} />
+                  TechnoFest Winner FAQs
+              </h2>
+              <div className="grid gap-4">
+                  <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl">
+                      <h3 className="font-bold text-slate-100 mb-2">What is the official result for AirGuard at TechnoFest 2026?</h3>
+                      <p className="text-sm text-slate-400 leading-relaxed">AirGuard ranked 2nd overall in the Junior Category. It was recognized for its advanced spatial computing and AI safety features developed specifically for the Stonehill International School hackathon.</p>
+                  </div>
+                  <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl">
+                      <h3 className="font-bold text-slate-100 mb-2">Which school organized the TechnoFest 2026 event?</h3>
+                      <p className="text-sm text-slate-400 leading-relaxed">The event was organized and hosted by Stonehill International School (SIS) at their campus in Bangalore, Karnataka.</p>
+                  </div>
+                  <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl">
+                      <h3 className="font-bold text-slate-100 mb-2">Who are the creators of the AirGuard drone app?</h3>
+                      <p className="text-sm text-slate-400 leading-relaxed">AirGuard was created by Team Daemons, a student team competing in the 2026 inter-school state-level tech competition.</p>
+                  </div>
+              </div>
+          </section>
+
           <section>
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3 text-left">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
               <Users className="text-blue-400" size={24} />
               Team Daemons Achievements
             </h2>
-            <div className="bg-slate-900/30 border border-slate-800 rounded-2xl p-8 text-left">
+            <div className="bg-slate-900/30 border border-slate-800 rounded-2xl p-8">
               <p className="text-slate-400 mb-6 leading-relaxed">
-                As representatives of our school at Stonehill International School, we demonstrated excellence in <strong>Geo-Spatial Computing</strong> and <strong>Artificial Intelligence Integration</strong>. Our work on AirGuard was recognized for its practical application and technical depth.
+                As representatives of our school at Stonehill International School, we demonstrated excellence in <strong>Geo-Spatial Computing</strong> and <strong>Artificial Intelligence Integration</strong>.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex items-center gap-3 p-4 bg-slate-950/50 border border-slate-800 rounded-xl">

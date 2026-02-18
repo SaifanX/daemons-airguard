@@ -15,6 +15,12 @@ export const getCaptainCritique = async (
   path?: { lat: number, lng: number }[]
 ): Promise<string> => {
   // Use the pre-configured environment variable exclusively.
+  // Ensure we are using the new constructor syntax properly.
+  if (!process.env.API_KEY) {
+    console.error("AI_COMMAND_ERROR: API_KEY is missing from environment.");
+    return "Tactical link failed. System API_KEY is not configured in the environment.";
+  }
+
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const weatherContext = weather 
@@ -66,9 +72,13 @@ export const getCaptainCritique = async (
       }
     });
 
+    // Accessing .text as a property as per latest SDK guidelines
     return response.text || "Communication relay weak. Please rephrase your request, Pilot.";
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    return "Relay Error: Could not connect to the AI Tactical Core. Verify your connection.";
+    if (error.message?.includes("API key not valid")) {
+      return "SECURITY ERROR: The tactical API key is invalid. Please contact system admin.";
+    }
+    return "Relay Error: Could not connect to the AI Tactical Core. Check logs.";
   }
 };

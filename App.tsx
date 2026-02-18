@@ -9,11 +9,11 @@ const TitleManager = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const baseTitle = "AirGuard | Drone Safety Assistant";
+    const baseTitle = "AirGuard | AI Drone Safety Assistant";
     const titles: Record<string, string> = {
-      "/": "AirGuard | Home - TechnoFest 2026 Winner",
-      "/app": "AirGuard | Mission Control - Active Drone Safety",
-      "/hackathon": "AirGuard | TechnoFest 2026 - Stonehill International School",
+      "/": "AirGuard | Home - Award-Winning Drone Safety Assistant",
+      "/app": "Mission Control | AirGuard - AI Drone Risk Assessment",
+      "/hackathon": "TechnoFest 2026 | AirGuard - Stonehill Hackathon Winner",
       "/mission-control": "AirGuard | Mission Control"
     };
 
